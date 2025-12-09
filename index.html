@@ -1,142 +1,292 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pack-O-Mat</title>
-<style>
-body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(180deg,#061219,#0b1220);
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-}
-h1 { text-align: center; }
-label { display: block; margin-top: 10px; }
-input[type=text], input[type=number] { width: 200px; padding:5px; margin-top:3px; }
-button { margin-top: 10px; padding: 5px 15px; cursor: pointer; }
-ul { list-style: none; padding:0; }
-li { margin: 5px 0; }
-.container { max-width: 400px; width:100%; margin-top:20px; }
-.section { background: rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:15px; }
-</style>
+  <meta charset="UTF-8" />
+  <title>www.pack-o-mat.de</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #f4faff;
+      border-radius: 10px;
+    }
+    h1 {
+      text-align: center;
+      color: #007acc;
+    }
+    label {
+      margin-top: 15px;
+      display: block;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      font-size: 1em;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 15px;
+      font-size: 1em;
+      background: #007acc;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+    #packliste, #gespeicherteListen {
+      margin-top: 30px;
+      background: #e6f7ff;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 10px;
+    }
+    .zusatz, .speichern, .teilen {
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
+  <h1>Pack-O-Mat</h1>
 
-<h1>Pack-O-Mat</h1>
+  <label>Reisedatum:</label>
+  <input type="date" id="datum" />
 
-<div class="container">
-  <div class="section">
-    <h2>Packliste erstellen</h2>
-    <label>Artikelname:
-      <input type="text" id="itemName" placeholder="z.B. Socken">
-    </label>
-    <label>Menge:
-      <input type="number" id="itemAmount" value="1" min="1">
-    </label>
-    <button onclick="addItem()">Hinzufügen</button>
+  <label>Reisedauer (Tage):</label>
+  <input type="number" id="tage" min="1" value="1" />
+
+  <label>Unterkunft:</label>
+  <select id="unterkunft">
+    <option value="hotel">Hotel / Ferienwohnung</option>
+    <option value="zelt">Zelt / Camping</option>
+  </select>
+
+  <label>Geländeart:</label>
+  <select id="gelaende">
+    <option value="flach">Flach</option>
+    <option value="huegelig">Hügelig</option>
+    <option value="bergig">Bergig</option>
+    <option value="stadt">Stadt</option>
+    <option value="wald">Waldgebiet</option>
+  </select>
+
+  <button onclick="erstellePackliste()">Packliste erstellen</button>
+
+  <div class="zusatz">
+    <label>Eigenes Teil zur Liste hinzufügen:</label>
+    <input type="text" id="eigenesItem" placeholder="z. B. Lieblingskuscheltier" />
+    <button onclick="eigenesTeilHinzufuegen()">Hinzufügen</button>
   </div>
 
-  <div class="section">
-    <h2>Aktuelle Packliste</h2>
-    <ul id="packList"></ul>
-    <button onclick="generateCode()">Share-Code erstellen</button>
-    <p id="shareCodeDisplay" style="word-break: break-all;"></p>
+  <div class="speichern">
+    <label>Packliste speichern als:</label>
+    <input type="text" id="listenName" placeholder="z. B. Italien 2025" />
+    <button onclick="speicherePackliste()">Speichern</button>
   </div>
 
-  <div class="section">
-    <h2>Share-Code eingeben</h2>
-    <input type="text" id="codeInput" placeholder="Code hier einfügen">
-    <button onclick="loadFromCode()">Packliste anzeigen</button>
+  <div class="teilen">
+    <button onclick="teilePackliste()">Packliste teilen</button>
+    <p id="shareLink"></p>
   </div>
-</div>
 
-<script>
-// ======== Dynamische Codierung ========
-let ITEM_CODES = {};       // Artikel → Code
-let ITEM_BY_CODE = {};     // Code → Artikel
-let nextCode = 65;         // ASCII A=65, B=66 ... Z=90, dann weiter aa, ab etc.
+  <div id="packliste"></div>
 
-function getNextCode() {
-  if(nextCode <= 90) return String.fromCharCode(nextCode++);
-  else {
-    let first = Math.floor((nextCode-91)/26);
-    let second = (nextCode-91)%26;
-    nextCode++;
-    return String.fromCharCode(97+first)+String.fromCharCode(97+second); // aa, ab, ...
-  }
-}
+  <div id="gespeicherteListen">
+    <h3>Gespeicherte Packlisten:</h3>
+    <ul id="alleListen"></ul>
+  </div>
 
-// ======== Packliste Array ========
-let packListArr = [];
+  <script>
+    let liste = [];
+    let eigeneDaten = JSON.parse(localStorage.getItem("eigeneSachen") || "{}");
 
-// ======== Artikel hinzufügen ========
-function addItem() {
-  const name = document.getElementById("itemName").value.trim();
-  const amount = parseInt(document.getElementById("itemAmount").value);
-  if(!name || amount < 1) return alert("Name und Menge korrekt eingeben!");
-  
-  // neuen Code vergeben falls nötig
-  if(!ITEM_CODES[name]) {
-    const code = getNextCode();
-    ITEM_CODES[name] = code;
-    ITEM_BY_CODE[code] = name;
-  }
+    function getJahreszeitVonBis(start, tage) {
+      const monatsnamen = ["januar", "februar", "märz", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "dezember"];
+      const monate = new Set();
+      const d = new Date(start);
+      for (let i = 0; i < tage; i++) {
+        monate.add(d.getMonth());
+        d.setDate(d.getDate() + 1);
+      }
+      const alle = Array.from(monate).map(m => {
+        if (m >= 2 && m <= 4) return "frühling";
+        if (m >= 5 && m <= 7) return "sommer";
+        if (m >= 8 && m <= 10) return "herbst";
+        return "winter";
+      });
+      return Array.from(new Set(alle)); // doppelte Jahreszeiten entfernen
+    }
 
-  // prüfen, ob schon vorhanden -> Menge addieren
-  let found = packListArr.find(i => i.name === name);
-  if(found) found.amount += amount;
-  else packListArr.push({name, amount});
-  
-  renderList();
-}
+    function erstellePackliste() {
+      const datum = document.getElementById('datum').value;
+      const tage = parseInt(document.getElementById('tage').value);
+      const unterkunft = document.getElementById('unterkunft').value;
+      const gelaende = document.getElementById('gelaende').value;
 
-// ======== Liste anzeigen ========
-function renderList() {
-  const ul = document.getElementById("packList");
-  ul.innerHTML = "";
-  packListArr.forEach(item => {
-    let li = document.createElement("li");
-    li.textContent = `${item.amount} × ${item.name}`;
-    ul.appendChild(li);
-  });
-}
+      if (!datum || tage < 1) {
+        alert("Bitte gib ein gültiges Datum und eine Reisedauer ein.");
+        return;
+      }
 
-// ======== Share-Code generieren ========
-function generateCode() {
-  if(packListArr.length === 0) return alert("Keine Artikel in der Liste!");
-  let encoded = packListArr.map(item=>{
-    const code = ITEM_CODES[item.name];
-    return code + item.amount;
-  }).join("|");
-  const base64 = btoa(encoded);
-  document.getElementById("shareCodeDisplay").textContent = base64;
-}
+      const reisedatum = new Date(datum);
+      const jahreszeiten = getJahreszeitVonBis(reisedatum, tage);
+      liste = [];
 
-// ======== Code laden ========
-function loadFromCode() {
-  const code = document.getElementById("codeInput").value.trim();
-  if(!code) return alert("Bitte Code eingeben!");
-  let decoded;
-  try {
-    decoded = atob(code);
-  } catch(e) {
-    return alert("Ungültiger Code!");
-  }
-  let parts = decoded.split("|");
-  packListArr = parts.map(part => {
-    let itemCode = part.match(/^[a-zA-Z]+/)[0];
-    let amount = parseInt(part.slice(itemCode.length));
-    let name = ITEM_BY_CODE[itemCode];
-    if(!name) name = "Unbekannt";
-    return {name, amount};
-  });
-  renderList();
-}
-</script>
+      liste.push(`Unterwäsche (${tage}x)`);
+      liste.push(`Socken (${tage}x)`);
+      liste.push("Zahnbürste & Zahnpasta");
+      liste.push("Ladekabel / Powerbank");
+      liste.push("Reisedokumente");
 
+      if (jahreszeiten.includes("sommer")) {
+        liste.push("T-Shirts");
+        liste.push("Kurze Hosen");
+        liste.push("Sonnencreme");
+        liste.push("Sonnenbrille");
+        liste.push("Badekleidung");
+      }
+      if (jahreszeiten.includes("herbst")) {
+        liste.push("Pullover");
+        liste.push("Lange Hosen");
+        liste.push("Regenjacke");
+      }
+      if (jahreszeiten.includes("frühling")) {
+        liste.push("Zwiebellook-Kleidung");
+        liste.push("Turnschuhe");
+      }
+      if (jahreszeiten.includes("winter")) {
+        liste.push("Winterjacke");
+        liste.push("Mütze, Schal, Handschuhe");
+        liste.push("Thermokleidung");
+      }
+
+      if (unterkunft === "zelt") {
+        liste.push("Zelt");
+        liste.push("Heringe & Hammer");
+        liste.push("Schlafsack");
+        liste.push("Isomatte oder Luftmatratze");
+        liste.push("Campingkocher");
+        liste.push("Taschenlampe oder Stirnlampe");
+        liste.push("Mückenschutz");
+        liste.push("Faltstuhl / Tisch");
+      }
+
+      if (gelaende === "bergig") {
+        liste.push("Wanderschuhe");
+        liste.push("Trinkflasche");
+      } else if (gelaende === "huegelig") {
+        liste.push("Bequeme Schuhe");
+      } else if (gelaende === "stadt") {
+        liste.push("Alltagsschuhe");
+        liste.push("Tagesrucksack");
+      } else if (gelaende === "wald") {
+        liste.push("Insektenspray");
+        liste.push("Outdoorkleidung");
+      }
+
+      // eigene gespeicherte Dinge automatisch dazunehmen
+      const key = jahreszeiten.sort().join("-") + "-" + unterkunft + "-" + gelaende;
+      if (eigeneDaten[key]) {
+        liste.push(...eigeneDaten[key]);
+      }
+
+      zeigePackliste(reisedatum, jahreszeiten.join(", "));
+    }
+
+    function zeigePackliste(reisedatum, jahreszeit) {
+      const div = document.getElementById('packliste');
+      div.innerHTML = `<h2>Deine Packliste</h2>
+      <p><strong>Reisedatum:</strong> ${reisedatum.toLocaleDateString('de-DE')} (${jahreszeit})</p>
+      <ul id="liste">${liste.map(item => `<li><input type="checkbox"> ${item}</li>`).join("")}</ul>`;
+    }
+
+    function eigenesTeilHinzufuegen() {
+      const input = document.getElementById('eigenesItem');
+      const wert = input.value.trim();
+      if (wert) {
+        liste.push(wert);
+        const ul = document.getElementById('liste');
+        if (ul) {
+          const li = document.createElement('li');
+          li.innerHTML = `<input type="checkbox"> ${wert}`;
+          ul.appendChild(li);
+        }
+        const datum = document.getElementById('datum').value;
+        const tage = parseInt(document.getElementById('tage').value);
+        const unterkunft = document.getElementById('unterkunft').value;
+        const gelaende = document.getElementById('gelaende').value;
+        const jahreszeiten = getJahreszeitVonBis(new Date(datum), tage);
+        const key = jahreszeiten.sort().join("-") + "-" + unterkunft + "-" + gelaende;
+        eigeneDaten[key] = eigeneDaten[key] || [];
+        eigeneDaten[key].push(wert);
+        eigeneDaten[key] = [...new Set(eigeneDaten[key])];
+        localStorage.setItem("eigeneSachen", JSON.stringify(eigeneDaten));
+        input.value = "";
+      }
+    }
+
+    function speicherePackliste() {
+      const name = document.getElementById("listenName").value.trim();
+      if (!name || liste.length === 0) return alert("Bitte gib einen Namen ein und erstelle zuerst eine Packliste.");
+      let gespeicherte = JSON.parse(localStorage.getItem("alleListen") || "{}");
+      gespeicherte[name] = liste;
+      localStorage.setItem("alleListen", JSON.stringify(gespeicherte));
+      zeigeGespeicherteListen();
+      document.getElementById("listenName").value = "";
+    }
+
+    function zeigeGespeicherteListen() {
+      const ul = document.getElementById("alleListen");
+      ul.innerHTML = "";
+      const gespeicherte = JSON.parse(localStorage.getItem("alleListen") || "{}");
+      for (const name in gespeicherte) {
+        const li = document.createElement("li");
+        li.innerHTML = `<button onclick="ladeListe('${name}')">${name}</button>`;
+        ul.appendChild(li);
+      }
+    }
+
+    function ladeListe(name) {
+      const gespeicherte = JSON.parse(localStorage.getItem("alleListen") || "{}");
+      liste = gespeicherte[name];
+      const div = document.getElementById('packliste');
+      div.innerHTML = `<h2>${name}</h2><ul id="liste">${liste.map(item => `<li><input type="checkbox"> ${item}</li>`).join("")}</ul>`;
+    }
+
+    function teilePackliste() {
+      if (!liste.length) return alert("Erstelle erst eine Packliste!");
+      const data = encodeURIComponent(JSON.stringify(liste));
+      const url = `${location.origin}${location.pathname}?share=${data}`;
+      document.getElementById("shareLink").innerHTML = `Schaue dir meine Packliste an:<br><a href="${url}" target="_blank">${url}</a>`;
+    }
+
+    function ladeGeteiltePackliste() {
+      const params = new URLSearchParams(location.search);
+      if (params.has("share")) {
+        try {
+          liste = JSON.parse(decodeURIComponent(params.get("share")));
+          zeigePackliste(new Date(), "geteilt");
+        } catch (e) {
+          alert("Fehler beim Laden der geteilten Packliste.");
+        }
+      }
+    }
+
+    // beim Laden:
+    zeigeGespeicherteListen();
+    ladeGeteiltePackliste();
+  </script>
 </body>
 </html>
