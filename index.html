@@ -12,15 +12,8 @@
       background: #f4faff;
       border-radius: 10px;
     }
-    h1 {
-      text-align: center;
-      color: #007acc;
-    }
-    label {
-      margin-top: 15px;
-      display: block;
-      font-weight: bold;
-    }
+    h1 { text-align: center; color: #007acc; }
+    label { margin-top: 15px; display: block; font-weight: bold; }
     input, select {
       width: 100%;
       padding: 8px;
@@ -37,256 +30,198 @@
       border-radius: 5px;
       cursor: pointer;
     }
-    button:hover {
-      background: #005fa3;
-    }
+    button:hover { background: #005fa3; }
     #packliste, #gespeicherteListen {
       margin-top: 30px;
       background: #e6f7ff;
       padding: 15px;
       border-radius: 8px;
     }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      margin-bottom: 10px;
-    }
-    .zusatz, .speichern, .teilen {
-      margin-top: 20px;
-    }
+    ul { list-style: none; padding: 0; }
+    li { margin-bottom: 10px; }
+    .zusatz, .speichern, .teilen { margin-top: 20px; }
   </style>
 </head>
 <body>
-  <h1>Pack-o-Mat</h1>
 
-  <label>Reisedatum:</label>
-  <input type="date" id="datum" />
+<h1>Pack-o-Mat</h1>
 
-  <label>Reisedauer (Tage):</label>
-  <input type="number" id="tage" min="1" value="1" />
+<label>Reisedatum:</label>
+<input type="date" id="datum" />
 
-  <label>Unterkunft:</label>
-  <select id="unterkunft">
-    <option value="hotel">Hotel / Ferienwohnung</option>
-    <option value="zelt">Zelt / Camping</option>
-  </select>
+<label>Reisedauer (Tage):</label>
+<input type="number" id="tage" min="1" value="1" />
 
-  <label>Geländeart:</label>
-  <select id="gelaende">
-    <option value="flach">Flach</option>
-    <option value="huegelig">Hügelig</option>
-    <option value="bergig">Bergig</option>
-    <option value="stadt">Stadt</option>
-    <option value="wald">Waldgebiet</option>
-  </select>
+<label>Unterkunft:</label>
+<select id="unterkunft">
+  <option value="hotel">Hotel / Ferienwohnung</option>
+  <option value="zelt">Zelt / Camping</option>
+</select>
 
-  <button onclick="erstellePackliste()">Packliste erstellen</button>
+<label>Klima:</label>
+<select id="klima">
+  <option value="heiß">Heiß</option>
+  <option value="warm">Warm</option>
+  <option value="mittel">Mittel</option>
+  <option value="kalt">Kalt</option>
+</select>
 
-  <div class="zusatz">
-    <label>Eigenes Teil zur Liste hinzufügen:</label>
-    <input type="text" id="eigenesItem" placeholder="z. B. Lieblingskuscheltier" />
-    <button onclick="eigenesTeilHinzufuegen()">Hinzufügen</button>
-  </div>
+<label>Geländeart:</label>
+<select id="gelaende">
+  <option value="flach">Flach</option>
+  <option value="huegelig">Hügelig</option>
+  <option value="bergig">Bergig</option>
+  <option value="stadt">Stadt</option>
+  <option value="wald">Waldgebiet</option>
+</select>
 
-  <div class="speichern">
-    <label>Packliste speichern als:</label>
-    <input type="text" id="listenName" placeholder="z. B. Italien 2025" />
-    <button onclick="speicherePackliste()">Speichern</button>
-  </div>
+<button onclick="erstellePackliste()">Packliste erstellen</button>
 
-  <div class="teilen">
-    <button onclick="teilePackliste()">Packliste teilen</button>
-    <p id="shareLink"></p>
-  </div>
+<div class="zusatz">
+  <label>Eigenes Teil hinzufügen:</label>
+  <input type="text" id="eigenesItem" placeholder="z. B. Lieblingskuscheltier">
+  <button onclick="eigenesTeilHinzufuegen()">Hinzufügen</button>
+</div>
 
-  <div id="packliste"></div>
+<div class="speichern">
+  <label>Packliste speichern als:</label>
+  <input type="text" id="listenName" placeholder="z. B. Italien 2025">
+  <button onclick="speicherePackliste()">Speichern</button>
+</div>
 
-  <div id="gespeicherteListen">
-    <h3>Gespeicherte Packlisten:</h3>
-    <ul id="alleListen"></ul>
-  </div>
+<div class="teilen">
+  <button onclick="teilePackliste()">Packliste teilen</button>
+  <p id="shareLink"></p>
+</div>
 
-  <script>
-    let liste = [];
-    let eigeneDaten = JSON.parse(localStorage.getItem("eigeneSachen") || "{}");
+<div id="packliste"></div>
 
-    function getJahreszeitVonBis(start, tage) {
-      const monatsnamen = ["januar", "februar", "märz", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "dezember"];
-      const monate = new Set();
-      const d = new Date(start);
-      for (let i = 0; i < tage; i++) {
-        monate.add(d.getMonth());
-        d.setDate(d.getDate() + 1);
-      }
-      const alle = Array.from(monate).map(m => {
-        if (m >= 2 && m <= 4) return "frühling";
-        if (m >= 5 && m <= 7) return "sommer";
-        if (m >= 8 && m <= 10) return "herbst";
-        return "winter";
-      });
-      return Array.from(new Set(alle)); // doppelte Jahreszeiten entfernen
-    }
+<div id="gespeicherteListen">
+  <h3>Gespeicherte Packlisten:</h3>
+  <ul id="alleListen"></ul>
+</div>
 
-    function erstellePackliste() {
-      const datum = document.getElementById('datum').value;
-      const tage = parseInt(document.getElementById('tage').value);
-      const unterkunft = document.getElementById('unterkunft').value;
-      const gelaende = document.getElementById('gelaende').value;
+<script>
+let liste = [];
+let eigeneDaten = JSON.parse(localStorage.getItem("eigeneSachen") || "{}");
 
-      if (!datum || tage < 1) {
-        alert("Bitte gib ein gültiges Datum und eine Reisedauer ein.");
-        return;
-      }
+function getJahreszeitVonBis(start, tage) {
+  const monate = new Set();
+  const d = new Date(start);
+  for (let i = 0; i < tage; i++) {
+    monate.add(d.getMonth());
+    d.setDate(d.getDate() + 1);
+  }
+  return [...new Set([...monate].map(m =>
+    m >= 2 && m <= 4 ? "frühling" :
+    m >= 5 && m <= 7 ? "sommer" :
+    m >= 8 && m <= 10 ? "herbst" : "winter"
+  ))];
+}
 
-      const reisedatum = new Date(datum);
-      const jahreszeiten = getJahreszeitVonBis(reisedatum, tage);
-      liste = [];
+function erstellePackliste() {
+  const datum = document.getElementById("datum").value;
+  const tage = parseInt(document.getElementById("tage").value);
+  const unterkunft = document.getElementById("unterkunft").value;
+  const gelaende = document.getElementById("gelaende").value;
+  const klima = document.getElementById("klima").value;
 
-      liste.push(`Unterwäsche (${tage}x)`);
-      liste.push(`Socken (${tage}x)`);
-      liste.push("Zahnbürste & Zahnpasta");
-      liste.push("Ladekabel / Powerbank");
-      liste.push("Reisedokumente");
+  if (!datum || tage < 1) return alert("Bitte gültige Daten eingeben.");
 
-      if (jahreszeiten.includes("sommer")) {
-        liste.push("T-Shirts");
-        liste.push("Kurze Hosen");
-        liste.push("Sonnencreme");
-        liste.push("Sonnenbrille");
-        liste.push("Badekleidung");
-      }
-      if (jahreszeiten.includes("herbst")) {
-        liste.push("Pullover");
-        liste.push("Lange Hosen");
-        liste.push("Regenjacke");
-      }
-      if (jahreszeiten.includes("frühling")) {
-        liste.push("Zwiebellook-Kleidung");
-        liste.push("Turnschuhe");
-      }
-      if (jahreszeiten.includes("winter")) {
-        liste.push("Winterjacke");
-        liste.push("Mütze, Schal, Handschuhe");
-        liste.push("Thermokleidung");
-      }
+  const jahreszeiten = getJahreszeitVonBis(new Date(datum), tage);
+  liste = [];
 
-      if (unterkunft === "zelt") {
-        liste.push("Zelt");
-        liste.push("Heringe & Hammer");
-        liste.push("Schlafsack");
-        liste.push("Isomatte oder Luftmatratze");
-        liste.push("Campingkocher");
-        liste.push("Taschenlampe oder Stirnlampe");
-        liste.push("Mückenschutz");
-        liste.push("Faltstuhl / Tisch");
-      }
+  liste.push(`Unterwäsche (${tage}x)`, `Socken (${tage}x)`, "Zahnbürste & Zahnpasta", "Ladekabel", "Reisedokumente");
 
-      if (gelaende === "bergig") {
-        liste.push("Wanderschuhe");
-        liste.push("Trinkflasche");
-      } else if (gelaende === "huegelig") {
-        liste.push("Bequeme Schuhe");
-      } else if (gelaende === "stadt") {
-        liste.push("Alltagsschuhe");
-        liste.push("Tagesrucksack");
-      } else if (gelaende === "wald") {
-        liste.push("Insektenspray");
-        liste.push("Outdoorkleidung");
-      }
+  if (jahreszeiten.includes("sommer")) liste.push("T-Shirts", "Kurze Hosen", "Sonnenbrille");
+  if (jahreszeiten.includes("herbst")) liste.push("Pullover", "Regenjacke");
+  if (jahreszeiten.includes("winter")) liste.push("Winterjacke", "Mütze & Handschuhe");
 
-      // eigene gespeicherte Dinge automatisch dazunehmen
-      const key = jahreszeiten.sort().join("-") + "-" + unterkunft + "-" + gelaende;
-      if (eigeneDaten[key]) {
-        liste.push(...eigeneDaten[key]);
-      }
+  // 🌡️ Klima
+  if (klima === "heiß") liste.push("Sehr leichte Kleidung", "Extra Sonnencreme", "Kappe");
+  if (klima === "warm") liste.push("Leichte Jacke");
+  if (klima === "mittel") liste.push("Normale Jacke");
+  if (klima === "kalt") liste.push("Dicke Jacke", "Thermosocken");
 
-      zeigePackliste(reisedatum, jahreszeiten.join(", "));
-    }
+  // 🏕 Unterkunft
+  if (unterkunft === "zelt") liste.push("Zelt", "Schlafsack", "Taschenlampe");
 
-    function zeigePackliste(reisedatum, jahreszeit) {
-      const div = document.getElementById('packliste');
-      div.innerHTML = `<h2>Deine Packliste</h2>
-      <p><strong>Reisedatum:</strong> ${reisedatum.toLocaleDateString('de-DE')} (${jahreszeit})</p>
-      <ul id="liste">${liste.map(item => `<li><input type="checkbox"> ${item}</li>`).join("")}</ul>`;
-    }
+  // 🏔 Gelände
+  if (gelaende === "bergig") liste.push("Wanderschuhe");
+  if (gelaende === "stadt") liste.push("Tagesrucksack");
+  if (gelaende === "wald") liste.push("Insektenspray");
 
-    function eigenesTeilHinzufuegen() {
-      const input = document.getElementById('eigenesItem');
-      const wert = input.value.trim();
-      if (wert) {
-        liste.push(wert);
-        const ul = document.getElementById('liste');
-        if (ul) {
-          const li = document.createElement('li');
-          li.innerHTML = `<input type="checkbox"> ${wert}`;
-          ul.appendChild(li);
-        }
-        const datum = document.getElementById('datum').value;
-        const tage = parseInt(document.getElementById('tage').value);
-        const unterkunft = document.getElementById('unterkunft').value;
-        const gelaende = document.getElementById('gelaende').value;
-        const jahreszeiten = getJahreszeitVonBis(new Date(datum), tage);
-        const key = jahreszeiten.sort().join("-") + "-" + unterkunft + "-" + gelaende;
-        eigeneDaten[key] = eigeneDaten[key] || [];
-        eigeneDaten[key].push(wert);
-        eigeneDaten[key] = [...new Set(eigeneDaten[key])];
-        localStorage.setItem("eigeneSachen", JSON.stringify(eigeneDaten));
-        input.value = "";
-      }
-    }
+  const key = jahreszeiten.sort().join("-") + "-" + klima + "-" + unterkunft + "-" + gelaende;
+  if (eigeneDaten[key]) liste.push(...eigeneDaten[key]);
 
-    function speicherePackliste() {
-      const name = document.getElementById("listenName").value.trim();
-      if (!name || liste.length === 0) return alert("Bitte gib einen Namen ein und erstelle zuerst eine Packliste.");
-      let gespeicherte = JSON.parse(localStorage.getItem("alleListen") || "{}");
-      gespeicherte[name] = liste;
-      localStorage.setItem("alleListen", JSON.stringify(gespeicherte));
-      zeigeGespeicherteListen();
-      document.getElementById("listenName").value = "";
-    }
+  zeigePackliste();
+}
 
-    function zeigeGespeicherteListen() {
-      const ul = document.getElementById("alleListen");
-      ul.innerHTML = "";
-      const gespeicherte = JSON.parse(localStorage.getItem("alleListen") || "{}");
-      for (const name in gespeicherte) {
-        const li = document.createElement("li");
-        li.innerHTML = `<button onclick="ladeListe('${name}')">${name}</button>`;
-        ul.appendChild(li);
-      }
-    }
+function zeigePackliste() {
+  document.getElementById("packliste").innerHTML =
+    `<h2>Deine Packliste</h2><ul id="liste">${liste.map(i => `<li><input type="checkbox"> ${i}</li>`).join("")}</ul>`;
+}
 
-    function ladeListe(name) {
-      const gespeicherte = JSON.parse(localStorage.getItem("alleListen") || "{}");
-      liste = gespeicherte[name];
-      const div = document.getElementById('packliste');
-      div.innerHTML = `<h2>${name}</h2><ul id="liste">${liste.map(item => `<li><input type="checkbox"> ${item}</li>`).join("")}</ul>`;
-    }
+function eigenesTeilHinzufuegen() {
+  const wert = document.getElementById("eigenesItem").value.trim();
+  if (!wert) return;
 
-    function teilePackliste() {
-      if (!liste.length) return alert("Erstelle erst eine Packliste!");
-      const data = encodeURIComponent(JSON.stringify(liste));
-      const url = `${location.origin}${location.pathname}?share=${data}`;
-      document.getElementById("shareLink").innerHTML = `Schaue dir meine Packliste an:<br><a href="${url}" target="_blank">${url}</a>`;
-    }
+  liste.push(wert);
+  document.getElementById("liste").innerHTML += `<li><input type="checkbox"> ${wert}</li>`;
 
-    function ladeGeteiltePackliste() {
-      const params = new URLSearchParams(location.search);
-      if (params.has("share")) {
-        try {
-          liste = JSON.parse(decodeURIComponent(params.get("share")));
-          zeigePackliste(new Date(), "geteilt");
-        } catch (e) {
-          alert("Fehler beim Laden der geteilten Packliste.");
-        }
-      }
-    }
+  const datum = document.getElementById("datum").value;
+  const tage = document.getElementById("tage").value;
+  const unterkunft = document.getElementById("unterkunft").value;
+  const gelaende = document.getElementById("gelaende").value;
+  const klima = document.getElementById("klima").value;
+  const jahreszeiten = getJahreszeitVonBis(new Date(datum), tage);
 
-    // beim Laden:
-    zeigeGespeicherteListen();
-    ladeGeteiltePackliste();
-  </script>
+  const key = jahreszeiten.sort().join("-") + "-" + klima + "-" + unterkunft + "-" + gelaende;
+  eigeneDaten[key] = [...new Set([...(eigeneDaten[key] || []), wert])];
+  localStorage.setItem("eigeneSachen", JSON.stringify(eigeneDaten));
+  document.getElementById("eigenesItem").value = "";
+}
+
+function speicherePackliste() {
+  const name = document.getElementById("listenName").value.trim();
+  if (!name) return alert("Name fehlt.");
+  const gespeicherte = JSON.parse(localStorage.getItem("alleListen") || "{}");
+  gespeicherte[name] = liste;
+  localStorage.setItem("alleListen", JSON.stringify(gespeicherte));
+  zeigeGespeicherteListen();
+}
+
+function zeigeGespeicherteListen() {
+  const ul = document.getElementById("alleListen");
+  ul.innerHTML = "";
+  const gespeicherte = JSON.parse(localStorage.getItem("alleListen") || "{}");
+  for (let n in gespeicherte) {
+    ul.innerHTML += `<li><button onclick="ladeListe('${n}')">${n}</button></li>`;
+  }
+}
+
+function ladeListe(name) {
+  const gespeicherte = JSON.parse(localStorage.getItem("alleListen") || "{}");
+  liste = gespeicherte[name];
+  zeigePackliste();
+}
+
+function teilePackliste() {
+  const url = location.origin + location.pathname + "?share=" + encodeURIComponent(JSON.stringify(liste));
+  document.getElementById("shareLink").innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
+}
+
+function ladeGeteiltePackliste() {
+  const p = new URLSearchParams(location.search);
+  if (p.has("share")) {
+    liste = JSON.parse(decodeURIComponent(p.get("share")));
+    zeigePackliste();
+  }
+}
+
+zeigeGespeicherteListen();
+ladeGeteiltePackliste();
+</script>
+
 </body>
 </html>
